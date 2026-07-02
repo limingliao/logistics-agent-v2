@@ -7,15 +7,13 @@ main.py
 
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.core.handlers import register_exception_handlers
 from app.core.middleware import register_middleware
+from app.core.logger import logger
 
-# 加载 .env 环境变量
-load_dotenv()
 
 
 @asynccontextmanager
@@ -24,12 +22,12 @@ async def lifespan(app: FastAPI):
     应用生命周期管理
     """
 
-    print("=" * 50)
-    print("🚀 Logistics AI Agent 正在启动...")
-    print("running on:http://127.0.0.1:8000")
-    print("running on(docs):http://127.0.0.1:8000/docs")
+    logger.info("=" * 50)
+    logger.info("🚀 Logistics AI Agent 正在启动...")
+    logger.info("running on:http://127.0.0.1:8000")
+    logger.info("running on(docs):http://127.0.0.1:8000/docs")
 
-    print("=" * 50)
+    logger.info("=" * 50)
 
     # 这里以后可以初始化：
     # 数据库连接
@@ -40,23 +38,16 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    print("=" * 50)
-    print("👋 Logistics AI Agent 已关闭")
-    print("=" * 50)
+    logger.info("=" * 50)
+    logger.info("👋 Logistics AI Agent 已关闭")
+    logger.info("=" * 50)
 
 
-# app = FastAPI(
-#     title="物流行业智能客服 Agent",
-#     description="基于 FastAPI + Python + LLM 构建的物流客服系统",
-#     version="1.0.0",
-#     lifespan=lifespan,
-# )
-# app = FastAPI(
-#     title="AI物流智能客服",
-# )
-# register_exception_handlers(app)
 app = FastAPI(
-    title="AI物流智能客服",
+    title="物流行业智能客服 Agent",
+    description="基于 FastAPI + Python + LLM 构建的物流客服系统",
+    version="2.0.0",
+    lifespan=lifespan,
 )
 
 register_exception_handlers(app)
