@@ -4,6 +4,7 @@
 
 from sqlalchemy.orm import Session
 
+from app.core.logger import logger
 from app.database.db import SessionLocal
 from app.database.models import User, Order, Track
 
@@ -12,8 +13,9 @@ def seed_database():
     db: Session = SessionLocal()
 
     try:
+        logger.info("🚀 开始执行 seed 数据初始化...")
         if db.query(User).first():
-            print("数据库已有数据，跳过初始化。")
+            logger.info("数据库已有数据，跳过初始化。")
             return
 
         user = User(
@@ -22,10 +24,12 @@ def seed_database():
             email="zhangsan@test.com"
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
-        print("✅ user ok")
+        db.flush()  # 获取 user.id（不提交事务）
 
+        logger.info(f"✅ user created, id={user.id}")
+        # =========================
+        # 创建订单
+        # =========================
         order1 = Order(
             order_no="SF123456",
             sender="深圳华强北",
@@ -39,7 +43,7 @@ def seed_database():
         db.add(order1)
         db.commit()
         db.refresh(order1)
-        print("✅ order1 ok")
+        logger.info("✅ order1 ok")
 
         order2 = Order(
             order_no="SF888888",
@@ -52,10 +56,8 @@ def seed_database():
         )
 
         db.add(order2)
-        db.commit()
-        db.refresh(order2)
-        print("✅ order2 ok")
-
+        db.flush()
+        logger.info("✅ orders created")
         # ======================
         # 创建物流轨迹
         # ======================
@@ -107,15 +109,15 @@ def seed_database():
 
         db.add_all(tracks)
         db.commit()
-        print("✅ tracks ok")
+        logger.info("🎉 seed 数据初始化完成")
 
     except Exception as e:
         db.rollback()
-        print("❌ seed失败：", e)
+        logger.exception(f"❌ seed 初始化失败: {str(e)}")
 
     finally:
         db.close()
-
+        logger.info("🔒 数据库连接已关闭")
 
 if __name__ == "__main__":
     seed_database()
