@@ -66,22 +66,20 @@ class LLMModel:
     # Tool Calling
     # =====================================================
 
-    def chat_with_tools(
-            self,
-            messages,
-            tools,
-    ):
+    def chat_with_tools(self, messages, tools=None):
         """
-        支持 Tool Calling
+        Tool Calling（安全版本）
         """
 
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=0.3,
             messages=messages,
-            tools=tools,
+            tools=tools or [],
             tool_choice="auto"
         )
+
+        return response.choices[0].message.content
 
     # =====================================================
     # 当前模型
