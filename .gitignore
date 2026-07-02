@@ -1,0 +1,6 @@
+# 在 .gitignore 文件中添加以下内容
+.venv/
+.idea/
+*.pyc
+__pycache__/
+.env
