@@ -23,6 +23,7 @@ from app.agent.prompts import SYSTEM_PROMPT
 from app.core.exceptions import BusinessException
 from app.core.logger import logger
 from app.llm.model import llm
+from app.agent.response_formatter import ResponseFormatter
 
 
 class LogisticsAgent:
@@ -39,6 +40,8 @@ class LogisticsAgent:
         self.planner = Planner()
 
         self.executor = Executor()
+
+        self.response_formatter = ResponseFormatter()
 
     # =====================================================
     # Chat Entry
@@ -68,7 +71,7 @@ class LogisticsAgent:
             execution_result = self.execute(plan)
 
             # Step5
-            response = self.summarize(
+            response = self.response_formatter.format(
                 context=context,
                 execution_result=execution_result
             )
@@ -152,34 +155,6 @@ class LogisticsAgent:
 
         return self.executor.execute(plan)
 
-    # =====================================================
-    # Summarize
-    # =====================================================
-
-    def summarize(
-        self,
-        context: Dict[str, Any],
-        execution_result: Dict[str, Any]
-    ) -> str:
-
-        logger.info("[Summarize]")
-
-        # Planner 没有 Tool
-        if len(execution_result["results"]) == 0:
-
-            return self.chat_with_llm(
-                context["message"]
-            )
-
-        # Tool 未命中，回退 LLM
-        if execution_result["results"][0]["tool"] == "llm":
-
-            return self.chat_with_llm(
-                context["message"]
-            )
-
-        # 后续这里可以交给 ResponseFormatter
-        return str(execution_result)
 
     # =====================================================
     # LLM
