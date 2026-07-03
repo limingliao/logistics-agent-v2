@@ -21,10 +21,14 @@ from app.agent.planner import Planner
 from app.agent.prompts import SYSTEM_PROMPT
 from app.core.exceptions import BusinessException
 from app.core.logger import logger
+
+from app.database.repository.conversation_repository import ConversationRepository
+from app.services.conversation_service import ConversationService
+
 from app.llm.model import llm
 from app.agent.response_formatter import ResponseFormatter
 from app.agent.memory.memory_manager import MemoryManager
-from app.agent.memory.conversation_memory import ConversationMemory
+from app.conversation.conversation import Conversation
 from app.services.memory_service import MemoryService
 from app.database.repository.memory_repository import MemoryRepository
 from app.agent.context import AgentContext
@@ -46,12 +50,19 @@ class LogisticsAgent:
         self.executor = Executor()
 
         self.response_formatter = ResponseFormatter()
+        self.conversation_repo = ConversationRepository()
+        self.conversation_service = ConversationService(self.conversation_repo)
 
     # =====================================================
     # Chat Entry
     # =====================================================
 
-    def chat(self, message: str) -> str:
+    def chat(
+            self,
+            user_id: str,
+            message: str,
+            conversation_id: str | None = None
+    ) -> str:
 
         if not message:
             raise BusinessException("message不能为空")
@@ -61,15 +72,23 @@ class LogisticsAgent:
         logger.info(f"[User] {message}")
 
         try:
+            # 先拿conversation
+            conversation = self.conversation_service.get_or_create(
+                user_id=user_id,
+                conversation_id=conversation_id
+            )
             # =========================
             # 1. 创建 Context
             # =========================
-            context = AgentContext(message=message)
-            session_id = "default"
+            context = AgentContext(
+                message=message,
+                user_id=user_id,
+                conversation_id=conversation.id
+            )
             # =========================
             # 2. 读取 Memory（关键）
             # =========================
-            history = self.memory.load_context(session_id)
+            history = self.memory.load_context(conversation.id)
             context.history = history
             # =========================
             # 3. 路由
@@ -90,8 +109,8 @@ class LogisticsAgent:
             # =========================
             # 7. 写入 Memory（关键）
             # =========================
-            self.memory.save_user_message(session_id, message)
-            self.memory.save_assistant_message(session_id, context.response)
+            self.memory.save_user_message(conversation.id, message)
+            self.memory.save_assistant_message(conversation.id, context.response)
 
             logger.info("[Agent] Chat Finished")
             return context.response
@@ -171,7 +190,7 @@ class LogisticsAgent:
 
         logger.info("[Executor]")
 
-        return self.executor.execute(plan)
+        return self.executor.execute(context)
 
 
     # =====================================================
