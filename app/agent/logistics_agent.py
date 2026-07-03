@@ -1,22 +1,28 @@
 """
 Enterprise Logistics Agent
 
+Agent Orchestrator
+
 职责：
-1. 接收用户请求
-2. 理解用户意图（Think）
-3. 制定执行计划（Plan）
-4. 执行任务（Execute）
-5. 整理最终回复（Summarize）
+
+1. Think
+2. Intent Routing
+3. Planning
+4. Execution
+5. Summarize
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from sqlalchemy.orm import Session
 
+from app.agent.executor import Executor
+from app.agent.intent_router import IntentRouter
+from app.agent.planner import Planner
+from app.agent.prompts import SYSTEM_PROMPT
 from app.core.exceptions import BusinessException
 from app.core.logger import logger
 from app.llm.model import llm
-from app.agent.prompts import SYSTEM_PROMPT
 
 
 class LogisticsAgent:
@@ -25,16 +31,20 @@ class LogisticsAgent:
     """
 
     def __init__(self, db: Session):
+
         self.db = db
 
+        self.router = IntentRouter()
+
+        self.planner = Planner()
+
+        self.executor = Executor()
+
     # =====================================================
-    # 对外统一入口
+    # Chat Entry
     # =====================================================
 
     def chat(self, message: str) -> str:
-        """
-        Agent 对话入口
-        """
 
         if not message:
             raise BusinessException("message不能为空")
@@ -45,49 +55,74 @@ class LogisticsAgent:
 
         try:
 
-            # Step1：理解问题
+            # Step1
             context = self.think(message)
 
-            # Step2：制定计划
+            # Step2
+            context = self.route(context)
+
+            # Step3
             plan = self.plan(context)
 
-            # Step3：执行
-            result = self.execute(plan)
+            # Step4
+            execution_result = self.execute(plan)
 
-            # Step4：整理回复
-            response = self.summarize(result)
+            # Step5
+            response = self.summarize(
+                context=context,
+                execution_result=execution_result
+            )
 
             logger.info("[Agent] Chat Finished")
 
             return response
 
         except Exception as e:
+
             logger.exception("[Agent] Chat Failed")
+
             raise BusinessException("AI服务调用失败") from e
 
     # =====================================================
     # Think
     # =====================================================
 
-    def think(self, message: str) -> Dict[str, Any]:
-        """
-        理解用户输入
+    def think(
+        self,
+        message: str
+    ) -> Dict[str, Any]:
 
-        后续可以：
-        - Intent Recognition
-        - Entity Extraction
-        - Memory
-        """
+        logger.info("[Think]")
 
-        logger.info("[Think] Start")
+        return {
 
-        context = {
             "message": message,
+
             "intent": None,
+
             "entities": {}
         }
 
-        logger.info(f"[Think] Context: {context}")
+    # =====================================================
+    # Route
+    # =====================================================
+
+    def route(
+        self,
+        context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+
+        logger.info("[Router]")
+
+        result = self.router.route(
+            context["message"]
+        )
+
+        context["intent"] = result.intent
+
+        context["entities"] = result.entities
+
+        context["confidence"] = result.confidence
 
         return context
 
@@ -95,80 +130,86 @@ class LogisticsAgent:
     # Plan
     # =====================================================
 
-    def plan(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        制定执行计划
+    def plan(
+        self,
+        context: Dict[str, Any]
+    ) -> Dict[str, Any]:
 
-        后续这里可以接 Planner。
-        """
+        logger.info("[Planner]")
 
-        logger.info("[Plan] Start")
-
-        plan = {
-            "use_tool": False,
-            "tool": None,
-            "context": context
-        }
-
-        logger.info(f"[Plan] {plan}")
-
-        return plan
+        return self.planner.create_plan(context)
 
     # =====================================================
     # Execute
     # =====================================================
 
-    def execute(self, plan: Dict[str, Any]) -> Any:
-        """
-        执行计划
+    def execute(
+        self,
+        plan: Dict[str, Any]
+    ) -> Dict[str, Any]:
 
-        当前：
-            直接调用 LLM
+        logger.info("[Executor]")
 
-        后续：
-            Tool Dispatcher
-            Planner
-            Multi Tool
-        """
-
-        logger.info("[Execute] Start")
-
-        context = plan["context"]
-
-        messages = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": context["message"]
-            }
-        ]
-
-        result = llm.chat_with_messages(messages)
-
-        logger.info("[Execute] LLM Success")
-
-        return result
+        return self.executor.execute(plan)
 
     # =====================================================
     # Summarize
     # =====================================================
 
-    def summarize(self, result: Any) -> str:
-        """
-        整理回复
+    def summarize(
+        self,
+        context: Dict[str, Any],
+        execution_result: Dict[str, Any]
+    ) -> str:
 
-        后续：
-        - Response Formatter
-        - Reflection
-        - Output Guard
-        """
+        logger.info("[Summarize]")
 
-        logger.info("[Summarize] Start")
+        # Planner 没有 Tool
+        if len(execution_result["results"]) == 0:
 
-        if result is None:
-            return "暂无结果。"
+            return self.chat_with_llm(
+                context["message"]
+            )
 
-        return str(result)
+        # Tool 未命中，回退 LLM
+        if execution_result["results"][0]["tool"] == "llm":
+
+            return self.chat_with_llm(
+                context["message"]
+            )
+
+        # 后续这里可以交给 ResponseFormatter
+        return str(execution_result)
+
+    # =====================================================
+    # LLM
+    # =====================================================
+
+    def chat_with_llm(
+        self,
+        message: str
+    ) -> str:
+
+        logger.info("[LLM]")
+
+        messages = [
+
+            {
+
+                "role": "system",
+
+                "content": SYSTEM_PROMPT
+
+            },
+
+            {
+
+                "role": "user",
+
+                "content": message
+
+            }
+
+        ]
+
+        return llm.chat_with_messages(messages)
