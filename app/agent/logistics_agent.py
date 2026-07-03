@@ -23,6 +23,10 @@ from app.core.exceptions import BusinessException
 from app.core.logger import logger
 from app.llm.model import llm
 from app.agent.response_formatter import ResponseFormatter
+from app.agent.memory.memory_manager import MemoryManager
+from app.agent.memory.conversation_memory import ConversationMemory
+from app.services.memory_service import MemoryService
+from app.database.repository.memory_repository import MemoryRepository
 from app.agent.context import AgentContext
 
 
@@ -57,38 +61,39 @@ class LogisticsAgent:
         logger.info(f"[User] {message}")
 
         try:
-
-            # Step1
-            # context = AgentContext(message=message)
-            #
-            # # Step2
-            # context = self.route(context)
-            #
-            # # Step3
-            # plan = self.plan(context)
-            #
-            # # Step4
-            # execution_result = self.execute(plan)
-            #
-            # # Step5
-            # response = self.response_formatter.format(
-            #     context=context,
-            #     execution_result=execution_result
-            # )
-            #
-            # logger.info("[Agent] Chat Finished")
-            #
-            # return response
+            # =========================
+            # 1. 创建 Context
+            # =========================
             context = AgentContext(message=message)
-
+            session_id = "default"
+            # =========================
+            # 2. 读取 Memory（关键）
+            # =========================
+            history = self.memory.load_context(session_id)
+            context.history = history
+            # =========================
+            # 3. 路由
+            # =========================
             context = self.route(context)
-
+            # =========================
+            # 4. 规划
+            # =========================
             context = self.plan(context)
-
+            # =========================
+            # 5. 执行
+            # =========================
             context = self.execute(context)
-
+            # =========================
+            # 6. 生成回复
+            # =========================
             context = self.format(context)
+            # =========================
+            # 7. 写入 Memory（关键）
+            # =========================
+            self.memory.save_user_message(session_id, message)
+            self.memory.save_assistant_message(session_id, context.response)
 
+            logger.info("[Agent] Chat Finished")
             return context.response
         except Exception as e:
 
@@ -161,8 +166,8 @@ class LogisticsAgent:
 
     def execute(
         self,
-        plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        context: AgentContext
+    ) -> AgentContext:
 
         logger.info("[Executor]")
 
