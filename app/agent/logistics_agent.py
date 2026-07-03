@@ -9,7 +9,6 @@ Agent Orchestrator
 2. Intent Routing
 3. Planning
 4. Execution
-5. Summarize
 """
 
 from typing import Any, Dict
@@ -24,6 +23,7 @@ from app.core.exceptions import BusinessException
 from app.core.logger import logger
 from app.llm.model import llm
 from app.agent.response_formatter import ResponseFormatter
+from app.agent.context import AgentContext
 
 
 class LogisticsAgent:
@@ -59,7 +59,7 @@ class LogisticsAgent:
         try:
 
             # Step1
-            context = self.think(message)
+            context = AgentContext(message=message)
 
             # Step2
             context = self.route(context)
@@ -90,21 +90,24 @@ class LogisticsAgent:
     # Think
     # =====================================================
 
-    def think(
-        self,
-        message: str
-    ) -> Dict[str, Any]:
+    # def think(
+    #     self,
+    #     message: str
+    # ) -> Dict[str, Any]:
+    #
+    #     logger.info("[Think]")
+    #
+    #     return {
+    #
+    #         "message": message,
+    #
+    #         "intent": None,
+    #
+    #         "entities": {}
+    #     }
+    def think(self, message: str) -> AgentContext:
 
-        logger.info("[Think]")
-
-        return {
-
-            "message": message,
-
-            "intent": None,
-
-            "entities": {}
-        }
+        return AgentContext(message=message)
 
     # =====================================================
     # Route
@@ -112,20 +115,20 @@ class LogisticsAgent:
 
     def route(
         self,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        context: AgentContext
+    ) -> AgentContext:
 
         logger.info("[Router]")
 
         result = self.router.route(
-            context["message"]
+            context.message
         )
 
-        context["intent"] = result.intent
+        context.intent = result.intent
 
-        context["entities"] = result.entities
+        context.entities = result.entities
 
-        context["confidence"] = result.confidence
+        context.confidence = result.confidence
 
         return context
 
@@ -135,8 +138,8 @@ class LogisticsAgent:
 
     def plan(
         self,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        context: AgentContext
+    ) -> AgentContext:
 
         logger.info("[Planner]")
 
