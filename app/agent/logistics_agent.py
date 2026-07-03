@@ -59,27 +59,37 @@ class LogisticsAgent:
         try:
 
             # Step1
+            # context = AgentContext(message=message)
+            #
+            # # Step2
+            # context = self.route(context)
+            #
+            # # Step3
+            # plan = self.plan(context)
+            #
+            # # Step4
+            # execution_result = self.execute(plan)
+            #
+            # # Step5
+            # response = self.response_formatter.format(
+            #     context=context,
+            #     execution_result=execution_result
+            # )
+            #
+            # logger.info("[Agent] Chat Finished")
+            #
+            # return response
             context = AgentContext(message=message)
 
-            # Step2
             context = self.route(context)
 
-            # Step3
-            plan = self.plan(context)
+            context = self.plan(context)
 
-            # Step4
-            execution_result = self.execute(plan)
+            context = self.execute(context)
 
-            # Step5
-            response = self.response_formatter.format(
-                context=context,
-                execution_result=execution_result
-            )
+            context = self.format(context)
 
-            logger.info("[Agent] Chat Finished")
-
-            return response
-
+            return context.response
         except Exception as e:
 
             logger.exception("[Agent] Chat Failed")

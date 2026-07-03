@@ -1,103 +1,84 @@
 """
-Executor
+Executor V3
 
 职责：
-    1. 执行 Planner 生成的执行计划
-    2. 调用 ToolDispatcher
-    3. 聚合执行结果
-    4. 提供统一执行入口
+- 执行 context.plan
+- 写入 context.execution_results
 """
 
-from typing import Dict, Any, List
-
-from app.core.logger import logger
+from app.agent.context import AgentContext, ExecutionItem
 from app.dispatcher.tool_dispatcher import ToolDispatcher
+from app.core.logger import logger
 
 
 class Executor:
-    """
-    企业级 Executor
-    """
 
     def __init__(self):
-        self.tool_dispatcher = ToolDispatcher()
+        self.dispatcher = ToolDispatcher()
 
-    # =====================================================
-    # 主入口
-    # =====================================================
-
-    def execute(self, plan: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: AgentContext) -> AgentContext:
         """
-        执行 Planner 生成的 Plan
-
-        Args:
-            plan: {
-                "steps": [...]
-            }
-
-        Returns:
-            execution result
+        执行计划
         """
 
-        logger.info("[Executor] Start Execution")
+        logger.info("[Executor] Start")
 
-        steps = plan.get("steps", [])
+        results = []
 
-        results: List[Dict[str, Any]] = []
+        for i, step in enumerate(context.plan):
 
-        for index, step in enumerate(steps):
+            tool = step.tool
+            args = step.args
 
-            tool_name = step.get("tool")
-            args = step.get("args", {})
+            logger.info(f"[Executor] Step {i+1} tool={tool}")
 
-            logger.info(
-                f"[Executor] Step {index + 1}: tool={tool_name}, args={args}"
-            )
+            # =========================
+            # LLM fallback
+            # =========================
+            if tool is None:
 
+                results.append(
+                    ExecutionItem(
+                        tool="llm",
+                        input={},
+                        output="fallback"
+                    )
+                )
+
+                continue
+
+            # =========================
+            # Tool execution
+            # =========================
             try:
 
-                # =========================
-                # 1. LLM fallback step
-                # =========================
-                if tool_name is None:
-                    logger.info("[Executor] LLM fallback step")
-
-                    results.append({
-                        "tool": "llm",
-                        "output": "fallback_to_llm"
-                    })
-
-                    continue
-
-                # =========================
-                # 2. Tool execution
-                # =========================
-                output = self.tool_dispatcher.dispatch(
-                    tool_name,
+                output = self.dispatcher.dispatch(
+                    tool,
                     **args
                 )
 
-                results.append({
-                    "tool": tool_name,
-                    "input": args,
-                    "output": output
-                })
+                results.append(
+                    ExecutionItem(
+                        tool=tool,
+                        input=args,
+                        output=output
+                    )
+                )
 
             except Exception as e:
 
-                logger.exception(f"[Executor] Step failed: {tool_name}")
+                logger.exception(f"[Executor] error in {tool}")
 
-                results.append({
-                    "tool": tool_name,
-                    "input": args,
-                    "error": str(e)
-                })
+                results.append(
+                    ExecutionItem(
+                        tool=tool,
+                        input=args,
+                        error=str(e)
+                    )
+                )
 
-        final_result = {
-            "steps": steps,
-            "results": results
-        }
+        context.execution_results = results
 
-        logger.info("[Executor] Execution Finished")
+        logger.info("[Executor] Done")
 
-        return final_result
+        return context
