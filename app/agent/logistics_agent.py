@@ -33,6 +33,7 @@ from app.database.repository.memory_repository import MemoryRepository
 from app.agent.context import AgentContext
 from app.agent.prompts.prompt_manager import PromptManager
 from app.agent.reflection.reflection_manager import ReflectionManager
+from app.agent.reasoning.reasoning_manager import ReasoningManager
 
 
 class LogisticsAgent:
@@ -65,6 +66,8 @@ class LogisticsAgent:
         conversation_memory = Conversation(memory_service)
 
         self.memory = MemoryManager(conversation_memory)
+
+        self.reasoning = ReasoningManager()
 
     # =====================================================
     # Chat Entry
