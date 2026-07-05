@@ -32,6 +32,7 @@ from app.services.memory_service import MemoryService
 from app.database.repository.memory_repository import MemoryRepository
 from app.agent.context import AgentContext
 from app.agent.prompts.prompt_manager import PromptManager
+from app.agent.reflection.reflection_manager import ReflectionManager
 
 
 class LogisticsAgent:
@@ -54,7 +55,8 @@ class LogisticsAgent:
         self.conversation_service = ConversationService(self.conversation_repo)
         # Prompt Manager
         self.prompt_manager = PromptManager()
-
+        # Reflection
+        self.reflection = ReflectionManager()
         # Memory
         memory_repository = MemoryRepository(db)
 
@@ -119,9 +121,30 @@ class LogisticsAgent:
             # 5. 执行
             # =========================
             context = self.execute(context)
-            context.response = self.chat_with_llm(
+            answer = self.chat_with_llm(
                 context.prompt
             )
+
+            # answer = self.reflect(
+            #     context.prompt,
+            #     answer)
+            result = self.reflection.reflect(answer)
+
+            if result.retry:
+                answer = self.chat_with_llm(
+                    prompt + f"""
+
+            请重新检查你的回答。
+
+            上一轮存在以下问题：
+
+            {result.reason}
+
+            请重新生成最终答案。
+            """
+                )
+            context.response = answer
+
             # =========================
             # 6. 生成回复
             # =========================
@@ -236,3 +259,47 @@ class LogisticsAgent:
         ]
 
         return llm.chat_with_messages(messages)
+
+    # =====================================================
+    # Reflection
+    # =====================================================
+
+    def reflect(
+            self,
+            prompt: str,
+            answer: str
+    ) -> str:
+        """
+        Reflection阶段
+
+        负责检查LLM回答质量，
+        必要时自动重试一次。
+        """
+
+        logger.info("[Reflection]")
+
+        result = self.reflection.reflect(answer)
+
+        logger.info(
+            f"[Reflection] "
+            f"score={result.score}, "
+            f"passed={result.passed}, "
+            f"reason={result.reason}"
+        )
+
+        if not self.reflection.should_retry(answer):
+            return answer
+
+        logger.warning("[Reflection] Retry LLM...")
+
+        retry_answer = self.chat_with_llm(prompt)
+
+        retry_result = self.reflection.reflect(retry_answer)
+
+        logger.info(
+            f"[Reflection Retry] "
+            f"score={retry_result.score}, "
+            f"passed={retry_result.passed}"
+        )
+
+        return retry_answer
