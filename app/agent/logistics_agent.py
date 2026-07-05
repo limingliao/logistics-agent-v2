@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 from app.agent.executor import Executor
 from app.agent.intent_router import IntentRouter
 from app.agent.planner import Planner
-from app.agent.prompts import SYSTEM_PROMPT
 from app.core.exceptions import BusinessException
 from app.core.logger import logger
 
@@ -32,6 +31,7 @@ from app.conversation.conversation import Conversation
 from app.services.memory_service import MemoryService
 from app.database.repository.memory_repository import MemoryRepository
 from app.agent.context import AgentContext
+from app.agent.prompts.prompt_manager import PromptManager
 
 
 class LogisticsAgent:
@@ -52,6 +52,17 @@ class LogisticsAgent:
         self.response_formatter = ResponseFormatter()
         self.conversation_repo = ConversationRepository()
         self.conversation_service = ConversationService(self.conversation_repo)
+        # Prompt Manager
+        self.prompt_manager = PromptManager()
+
+        # Memory
+        memory_repository = MemoryRepository(db)
+
+        memory_service = MemoryService(memory_repository)
+
+        conversation_memory = Conversation(memory_service)
+
+        self.memory = MemoryManager(conversation_memory)
 
     # =====================================================
     # Chat Entry
@@ -90,6 +101,12 @@ class LogisticsAgent:
             # =========================
             history = self.memory.load_context(conversation.id)
             context.history = history
+            prompt = self.prompt_manager.build(
+                user_input=message,
+                history=history,
+                memory=""
+            )
+            context.prompt = prompt
             # =========================
             # 3. 路由
             # =========================
@@ -102,6 +119,9 @@ class LogisticsAgent:
             # 5. 执行
             # =========================
             context = self.execute(context)
+            context.response = self.chat_with_llm(
+                context.prompt
+            )
             # =========================
             # 6. 生成回复
             # =========================
@@ -205,15 +225,6 @@ class LogisticsAgent:
         logger.info("[LLM]")
 
         messages = [
-
-            {
-
-                "role": "system",
-
-                "content": SYSTEM_PROMPT
-
-            },
-
             {
 
                 "role": "user",
