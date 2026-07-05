@@ -116,6 +116,30 @@ class LogisticsAgent:
             # 3. 路由
             # =========================
             context = self.route(context)
+            context = self.reason(context)
+
+            # =====================================================
+            # Reasoning
+            # =====================================================
+
+            def reason(
+                    self,
+                    context: AgentContext
+            ) -> AgentContext:
+
+                logger.info("[Reasoning]")
+
+                result = self.reasoning.run(
+
+                    message=context.message,
+
+                    intent=context.intent
+
+                )
+
+                context.reasoning_result = result
+
+                return context
             # =========================
             # 4. 规划
             # =========================
