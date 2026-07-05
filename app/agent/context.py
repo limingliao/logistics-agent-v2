@@ -62,7 +62,11 @@ class AgentContext:
     intent: Optional[str] = None
     confidence: float = 0.0
     entities: Dict[str, Any] = field(default_factory=dict)
+    # =========================
+    # Reasoning
+    # =========================
 
+    reasoning_result: Optional[Any] = None
     # =========================
     # Planner
     # =========================
