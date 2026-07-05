@@ -19,8 +19,26 @@ class Planner:
 
         logger.info("[Planner] Start")
 
-        intent = context.intent
-        message = context.message
+        reasoning = context.reasoning_result
+
+        plan = []
+
+        for task in reasoning.tasks:
+            plan.append(
+
+                PlanStep(
+
+                    tool=task.tool,
+
+                    args=task.args
+
+                )
+
+            )
+
+        context.plan = plan
+
+        return context
 
         plan = []
 
