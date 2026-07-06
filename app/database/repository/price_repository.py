@@ -4,7 +4,7 @@
 
 from sqlalchemy.orm import Session
 
-from app.database.models.price import PriceRule
+from app.database.models import PriceRule
 
 
 class PriceRepository:

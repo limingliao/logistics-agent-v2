@@ -122,3 +122,22 @@ class Track(Base):
         "Order",
         back_populates="tracks"
     )
+
+class Memory(Base):
+    __tablename__ = "memories"
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    user_id:Mapped[str]
+    session_id:Mapped[str]
+    type:Mapped[str]
+    role:Mapped[str]
+    content:Mapped[str]
+    summary:Mapped[str]
+    embedding:Mapped[str]
+    key:Mapped[str]
+    value:Mapped[str]
+    importance_score:Mapped[float]
+    metadata:Mapped[str]
+    expires_at:Mapped[str]
+    created_at:Mapped[str]
+    updated_at:Mapped[str]

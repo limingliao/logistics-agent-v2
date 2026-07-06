@@ -1,0 +1,89 @@
+"""
+Agent Dispatcher
+
+负责根据用户请求分发到对应 Agent。
+
+当前版本：
+    - 默认分发到 LogisticsAgent
+
+后续可扩展：
+    - OrderAgent
+    - PriceAgent
+    - FAQAgent
+    - ComplaintAgent
+"""
+
+from typing import Dict
+
+from app.agent.logistics_agent import LogisticsAgent
+
+
+class AgentDispatcher:
+    """
+    Agent 调度器
+    """
+
+    def __init__(self):
+        """
+        初始化所有 Agent
+
+        后续新增 Agent 时，只需要在这里注册即可。
+        """
+
+        self._agents: Dict[str, object] = {
+            "logistics": LogisticsAgent(),
+        }
+
+    def get_agent(self, agent_name: str = "logistics"):
+        """
+        获取指定 Agent
+
+        Args:
+            agent_name: Agent 名称
+
+        Returns:
+            Agent 实例
+        """
+
+        agent = self._agents.get(agent_name)
+
+        if agent is None:
+            raise ValueError(
+                f"Unknown agent: {agent_name}"
+            )
+
+        return agent
+
+    def dispatch(
+        self,
+        query: str,
+        agent_name: str = "logistics",
+    ):
+        """
+        分发用户请求
+
+        Args:
+            query: 用户问题
+            agent_name: Agent 名称
+
+        Returns:
+            Agent 回复
+        """
+
+        agent = self.get_agent(agent_name)
+
+        return agent.chat(query)
+
+    def list_agents(self):
+        """
+        返回所有 Agent
+        """
+
+        return list(self._agents.keys())
+
+    def has_agent(self, agent_name: str) -> bool:
+        """
+        判断 Agent 是否存在
+        """
+
+        return agent_name in self._agents

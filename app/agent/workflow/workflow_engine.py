@@ -2,25 +2,39 @@ from __future__ import annotations
 
 import time
 import traceback
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from workflow.workflow import Workflow
-from workflow.workflow_step import WorkflowStep
-from workflow.workflow_context import WorkflowContext
-from workflow.workflow_result import WorkflowResult
-from workflow.workflow_state import WorkflowState
+from app.agent.workflow.workflow import Workflow
+from app.agent.workflow.workflow_context import WorkflowContext
+from app.agent.workflow.workflow_result import WorkflowResult
+from app.agent.workflow.workflow_state import WorkflowState
+
+from app.agent.workflow.executors.executor_registry import ExecutorRegistry
+from app.agent.workflow.executors.tool_executor import ToolExecutor
+from app.agent.workflow.executors.llm_executor import LLMExecutor
+from app.agent.workflow.executors.python_executor import PythonExecutor
+from app.agent.workflow.executors.condition_executor import ConditionExecutor
+from app.agent.workflow.executors.custom_executor import CustomExecutor
 
 
 class WorkflowEngine:
     """
     Workflow执行引擎
 
-    职责：
-        - 顺序执行Workflow
-        - 管理WorkflowContext
-        - 调度Step
-        - 收集执行日志
-        - 返回WorkflowResult
+    负责：
+
+    1. Workflow生命周期管理
+    2. Step调度
+    3. Context维护
+    4. Result收集
+
+    不负责：
+
+    Tool执行
+    LLM执行
+    Python执行
+
+    上述职责全部交给Executor。
     """
 
     def __init__(
@@ -33,9 +47,62 @@ class WorkflowEngine:
         self.reasoning_engine = reasoning_engine
         self.memory_manager = memory_manager
 
-    #######################################################################
+        self.registry = ExecutorRegistry()
+
+        self._register_builtin_executors()
+
+    ##########################################################
+    # Register
+    ##########################################################
+
+    def _register_builtin_executors(self):
+
+        self.registry.register(
+            "tool",
+            ToolExecutor(self.tool_dispatcher)
+        )
+
+        self.registry.register(
+            "llm",
+            LLMExecutor(self.reasoning_engine)
+        )
+
+        self.registry.register(
+            "python",
+            PythonExecutor()
+        )
+
+        self.registry.register(
+            "condition",
+            ConditionExecutor()
+        )
+
+        self.registry.register(
+            "custom",
+            CustomExecutor()
+        )
+
+    ##########################################################
     # Public
-    #######################################################################
+    ##########################################################
+
+    def register_executor(
+        self,
+        step_type: str,
+        executor,
+    ):
+        """
+        动态注册新的Executor
+        """
+
+        self.registry.register(
+            step_type,
+            executor,
+        )
+
+    ##########################################################
+    # Execute
+    ##########################################################
 
     def execute(
         self,
@@ -43,7 +110,7 @@ class WorkflowEngine:
         context: Optional[WorkflowContext] = None,
     ) -> WorkflowResult:
 
-        start_time = time.time()
+        start = time.time()
 
         if context is None:
             context = WorkflowContext()
@@ -56,14 +123,27 @@ class WorkflowEngine:
 
             for step in workflow.steps:
 
-                logs.append(f"Start Step: {step.name}")
+                logs.append(
+                    f"Start Step [{step.name}]"
+                )
 
-                result = self._execute_step(step, context)
+                executor = self.registry.get(
+                    step.step_type
+                )
 
-                logs.append(f"Finish Step: {step.name}")
+                result = executor.execute(
+                    step,
+                    context,
+                )
 
-                if result is not None:
-                    context.set(step.name, result)
+                context.set(
+                    step.name,
+                    result,
+                )
+
+                logs.append(
+                    f"Finish Step [{step.name}]"
+                )
 
             context.state = WorkflowState.SUCCESS
 
@@ -74,7 +154,7 @@ class WorkflowEngine:
                 output=context.data,
                 context=context,
                 logs=logs,
-                elapsed=end - start_time,
+                elapsed=end - start,
             )
 
         except Exception as e:
@@ -82,7 +162,10 @@ class WorkflowEngine:
             context.state = WorkflowState.FAILED
 
             logs.append(str(e))
-            logs.append(traceback.format_exc())
+
+            logs.append(
+                traceback.format_exc()
+            )
 
             end = time.time()
 
@@ -91,121 +174,6 @@ class WorkflowEngine:
                 output=context.data,
                 context=context,
                 logs=logs,
-                elapsed=end - start_time,
+                elapsed=end - start,
                 error=str(e),
             )
-
-    #######################################################################
-    # Step Dispatcher
-    #######################################################################
-
-    def _execute_step(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ) -> Any:
-
-        step_type = step.step_type.lower()
-
-        if step_type == "tool":
-            return self._execute_tool(step, context)
-
-        elif step_type == "llm":
-            return self._execute_llm(step, context)
-
-        elif step_type == "python":
-            return self._execute_python(step, context)
-
-        elif step_type == "condition":
-            return self._execute_condition(step, context)
-
-        elif step_type == "custom":
-            return self._execute_custom(step, context)
-
-        else:
-            raise ValueError(f"Unknown step type: {step_type}")
-
-    #######################################################################
-    # Tool
-    #######################################################################
-
-    def _execute_tool(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ):
-
-        if self.tool_dispatcher is None:
-            raise RuntimeError("ToolDispatcher not configured.")
-
-        return self.tool_dispatcher.dispatch(
-            tool_name=step.action,
-            params=step.params,
-            context=context,
-        )
-
-    #######################################################################
-    # LLM
-    #######################################################################
-
-    def _execute_llm(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ):
-
-        if self.reasoning_engine is None:
-            raise RuntimeError("ReasoningEngine not configured.")
-
-        return self.reasoning_engine.reason(
-            prompt=step.action,
-            context=context,
-        )
-
-    #######################################################################
-    # Python
-    #######################################################################
-
-    def _execute_python(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ):
-
-        local_vars = {
-            "context": context,
-            "result": None,
-        }
-
-        exec(step.action, {}, local_vars)
-
-        return local_vars.get("result")
-
-    #######################################################################
-    # Condition
-    #######################################################################
-
-    def _execute_condition(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ):
-
-        condition = step.action
-
-        return eval(condition, {}, {"context": context})
-
-    #######################################################################
-    # Custom
-    #######################################################################
-
-    def _execute_custom(
-        self,
-        step: WorkflowStep,
-        context: WorkflowContext,
-    ):
-
-        if callable(step.action):
-            return step.action(context)
-
-        raise RuntimeError("Custom Step must be callable.")

@@ -1,9 +1,8 @@
 # AI物流智能客服系统（LLM Agent）V2
 版本号：v2.0.0
 
-项目简介：\
-基于 FastAPI + SQLAlchemy 构建的物流智能客服系统，采用分层架构设计，实现“用户自然语言 → 意图识别 → 任务分发 → 数据库查询 → 结果生成”的完整 Agent 流程。
-\LLM + Tool Calling 架构
+项目简介：
+LLM + Tool Calling 架构
 
 技术栈：\p
 Python / FastAPI / SQLAlchemy / SQLite

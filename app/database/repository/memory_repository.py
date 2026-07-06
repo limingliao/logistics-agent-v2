@@ -1,7 +1,8 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
-from app.models.memory import Memory  # 你需要有这个表
+from app.database.models import Memory
+
 
 
 class MemoryRepository:

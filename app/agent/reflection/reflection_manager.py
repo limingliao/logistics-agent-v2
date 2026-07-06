@@ -18,6 +18,8 @@ class ReflectionManager:
 
         self,
 
+        prompt: str,
+
         answer: str
 
     ) -> ReflectionResult:

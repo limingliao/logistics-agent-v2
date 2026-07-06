@@ -3,13 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 
-from rag.document import Document
-from rag.chunk import Chunk
+from app.rag.document import Document
+from app.rag.chunk import Chunk
 
-from rag.loaders.loader_manager import LoaderManager
-from rag.splitters.base_splitter import BaseSplitter
-from rag.embedding.embedding_manager import EmbeddingManager
-from rag.vectorstore.vector_store_manager import VectorStoreManager
+from app.rag.loaders.loader_manager import LoaderManager
+from app.rag.splitters.base_splitter import BaseSplitter
+from app.rag.embedding.embedding_manager import EmbeddingManager
+from app.rag.vectorstore.vector_store_manager import VectorStoreManager
 
 
 class KnowledgeBase:

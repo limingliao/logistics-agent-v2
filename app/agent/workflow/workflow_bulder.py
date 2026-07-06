@@ -22,7 +22,7 @@ from app.agent.workflow.workflow_step import (
     StepType,
 )
 
-from app.agent.tools.dispatcher import ToolDispatcher
+from app.dispatcher.tool_dispatcher import ToolDispatcher
 
 
 class WorkflowBuilder:

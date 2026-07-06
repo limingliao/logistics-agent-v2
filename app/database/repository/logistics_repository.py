@@ -4,13 +4,34 @@
 
 from sqlalchemy.orm import Session
 
-from app.database.models.logistics import Logistics
+from app.database.models import Logistics
 
-from app.database.crud import OrderCRUD
+from app.database.crud import OrderCRUD, TrackCRUD
 
 
 class LogisticsRepository:
+    @staticmethod
+    def get_order_detail(
+            db: Session,
+            order_no: str
+    ):
+        order = OrderCRUD.get_by_order_no(
+            db,
+            order_no
+        )
 
+        if not order:
+            return None
+
+        tracks = TrackCRUD.get_tracks(
+            db,
+            order.id
+        )
+
+        return {
+            "order": order,
+            "tracks": tracks
+        }
     @staticmethod
     def get_track(
         db: Session,

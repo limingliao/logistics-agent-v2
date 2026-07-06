@@ -1,11 +1,11 @@
 from typing import List, Dict, Any
 
-from app.memory.conversation_memory import ConversationMemory
+from app.conversation.conversation import Conversation
 
 
 class MemoryManager:
 
-    def __init__(self, memory: ConversationMemory):
+    def __init__(self, memory: Conversation):
 
         self.memory = memory
 

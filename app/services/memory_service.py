@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 
-from app.memory.memory_repository import MemoryRepository
+from app.database.repository.memory_repository import MemoryRepository
 
 
 class MemoryService:

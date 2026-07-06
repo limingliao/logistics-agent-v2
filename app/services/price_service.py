@@ -4,13 +4,19 @@
 
 from app.core.logger import logger
 from app.core.exceptions import ValidationException
-from app.agent.tools import query_price
 
 
 class PriceService:
 
     @staticmethod
-    def calculate(origin, destination, weight):
+    def calculate(
+        origin: str,
+        destination: str,
+        weight: float
+    ):
+        """
+        运费计算
+        """
 
         if not origin or not destination:
             raise ValidationException("origin/destination不能为空")
@@ -19,16 +25,19 @@ class PriceService:
             raise ValidationException("weight必须大于0")
 
         logger.info(
-            f"[PriceService] calc price: {origin} -> {destination}, weight={weight}"
+            f"[PriceService] 运费计算: "
+            f"{origin}->{destination}, weight={weight}"
         )
 
-        try:
-            result = query_price(origin, destination, weight)
+        # 临时示例算法
+        base_price = 10
+        unit_price = 2
 
-            logger.info("[PriceService] success")
+        total = base_price + weight * unit_price
 
-            return result
-
-        except Exception as e:
-            logger.exception("[PriceService] failed")
-            raise
+        return {
+            "origin": origin,
+            "destination": destination,
+            "weight": weight,
+            "price": round(total, 2)
+        }

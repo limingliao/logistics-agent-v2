@@ -1,0 +1,259 @@
+2026-07-02 12:12:23 | ERROR    | logistics-agent | handlers.py:50 | [Unhandled Exception] POST /chat
+Traceback (most recent call last):
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\core\middleware.py", line 28, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\api\chat.py", line 35, in chat
+    answer = agent.chat(request.message)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\agent\logistics_agent.py", line 31, in chat
+    return llm.chat_with_tools()
+           ^^^^^^^^^^^^^^^^^^^^^
+TypeError: LLMModel.chat_with_tools() missing 2 required positional arguments: 'messages' and 'tools'
+2026-07-02 12:13:18 | ERROR    | logistics-agent | handlers.py:50 | [Unhandled Exception] POST /chat
+Traceback (most recent call last):
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\core\middleware.py", line 28, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\api\chat.py", line 35, in chat
+    answer = agent.chat(request.message)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\agent\logistics_agent.py", line 31, in chat
+    return llm.chat_with_tools()
+           ^^^^^^^^^^^^^^^^^^^^^
+TypeError: LLMModel.chat_with_tools() missing 2 required positional arguments: 'messages' and 'tools'
+2026-07-02 12:15:53 | ERROR    | logistics-agent | handlers.py:50 | [Unhandled Exception] POST /chat
+Traceback (most recent call last):
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\core\middleware.py", line 28, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\api\chat.py", line 35, in chat
+    answer = agent.chat(request.message)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\agent\logistics_agent.py", line 31, in chat
+    return llm.chat_with_tools(self,messages)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\llm\model.py", line 78, in chat_with_tools
+    response = self.client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1251, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_base_client.py", line 1332, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_base_client.py", line 1022, in request
+    request = self._build_request(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_base_client.py", line 586, in _build_request
+    kwargs["content"] = openapi_dumps(json_data) if is_given(json_data) and json_data is not None else None
+                        ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_utils\_json.py", line 18, in openapi_dumps
+    return json.dumps(
+           ^^^^^^^^^^^
+  File "D:\DeveloperKits\Python\Lib\json\__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "D:\DeveloperKits\Python\Lib\json\encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\DeveloperKits\Python\Lib\json\encoder.py", line 258, in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\openai\_utils\_json.py", line 35, in default
+    return super().default(o)
+           ^^^^^^^^^^^^^^^^^^
+  File "D:\DeveloperKits\Python\Lib\json\encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type LogisticsAgent is not JSON serializable
+2026-07-02 12:17:42 | ERROR    | logistics-agent | handlers.py:50 | [Unhandled Exception] POST /chat
+Traceback (most recent call last):
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\core\middleware.py", line 28, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\api\chat.py", line 35, in chat
+    answer = agent.chat(request.message)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Agent Projects\logistics-agent-v2\app\agent\logistics_agent.py", line 31, in chat
+    return llm.chat_with_tools()
+           ^^^^^^^^^^^^^^^^^^^^^
+TypeError: LLMModel.chat_with_tools() missing 2 required positional arguments: 'messages' and 'tools'
