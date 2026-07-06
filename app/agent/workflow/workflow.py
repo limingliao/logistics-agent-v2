@@ -1,23 +1,20 @@
 """
-Workflow
+Workflow Definition
 
-企业级 Workflow 定义。
+Workflow 负责维护整个工作流的数据结构，不负责具体执行。
 
 职责：
-
-- 保存 Workflow 信息
-- 保存所有 WorkflowStep
-- 管理 Workflow 生命周期
-- 提供 Step 查询接口
-- 判断 Workflow 是否完成
-- 为 WorkflowEngine 提供执行对象
+- 管理 WorkflowStep
+- 管理 WorkflowState
+- 管理 WorkflowContext
+- 提供 Step 查询
+- 提供 Workflow 生命周期
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from app.agent.workflow.workflow_context import WorkflowContext
 from app.agent.workflow.workflow_state import WorkflowState
@@ -27,12 +24,12 @@ from app.agent.workflow.workflow_step import WorkflowStep
 @dataclass
 class Workflow:
     """
-    企业级 Workflow
+    Workflow 定义
     """
 
-    # ==========================================================
-    # 基础信息
-    # ==========================================================
+    # ==========================================
+    # Basic
+    # ==========================================
 
     workflow_id: str
 
@@ -40,208 +37,232 @@ class Workflow:
 
     description: str = ""
 
-    # ==========================================================
-    # Context
-    # ==========================================================
+    # ==========================================
+    # Runtime
+    # ==========================================
 
     context: Optional[WorkflowContext] = None
 
-    # ==========================================================
+    state: WorkflowState = WorkflowState.CREATED
+
+    # ==========================================
     # Steps
-    # ==========================================================
+    # ==========================================
 
     steps: List[WorkflowStep] = field(default_factory=list)
 
-    # ==========================================================
-    # Runtime
-    # ==========================================================
+    current_index: int = 0
 
-    state: WorkflowState = WorkflowState.CREATED
+    # ==========================================
+    # Metadata
+    # ==========================================
 
-    current_step_index: int = -1
+    metadata: Dict = field(default_factory=dict)
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    created_at: datetime = field(default_factory=datetime.utcnow)
-
-    updated_at: datetime = field(default_factory=datetime.utcnow)
-
-    # ==========================================================
-    # Step 管理
-    # ==========================================================
+    # =====================================================
+    # Add Step
+    # =====================================================
 
     def add_step(
         self,
         step: WorkflowStep,
     ) -> None:
-        """
-        添加 Step
-        """
 
         self.steps.append(step)
 
-        self.updated_at = datetime.utcnow()
+    # =====================================================
+    # Remove Step
+    # =====================================================
 
-    def extend_steps(
+    def remove_step(
         self,
-        steps: List[WorkflowStep],
-    ) -> None:
-        """
-        批量添加 Step
-        """
+        step_id: str,
+    ) -> bool:
 
-        self.steps.extend(steps)
+        for i, step in enumerate(self.steps):
 
-        self.updated_at = datetime.utcnow()
+            if step.step_id == step_id:
+
+                self.steps.pop(i)
+
+                return True
+
+        return False
+
+    # =====================================================
+    # Get Step
+    # =====================================================
 
     def get_step(
         self,
         step_id: str,
     ) -> Optional[WorkflowStep]:
-        """
-        根据 ID 获取 Step
-        """
 
         for step in self.steps:
 
             if step.step_id == step_id:
+
                 return step
 
         return None
 
-    def get_current_step(
+    # =====================================================
+    # Get Current Step
+    # =====================================================
+
+    def current_step(
         self,
     ) -> Optional[WorkflowStep]:
-        """
-        当前 Step
-        """
 
-        if (
-            self.current_step_index < 0
-            or
-            self.current_step_index >= len(self.steps)
-        ):
+        if self.current_index >= len(self.steps):
+
             return None
 
-        return self.steps[self.current_step_index]
+        return self.steps[self.current_index]
+
+    # =====================================================
+    # Next Step
+    # =====================================================
 
     def next_step(
         self,
     ) -> Optional[WorkflowStep]:
-        """
-        下一个 Step
-        """
 
-        if self.current_step_index + 1 >= len(self.steps):
+        self.current_index += 1
+
+        if self.current_index >= len(self.steps):
 
             return None
 
-        self.current_step_index += 1
+        return self.steps[self.current_index]
 
-        return self.steps[self.current_step_index]
+    # =====================================================
+    # Has Next
+    # =====================================================
 
-    # ==========================================================
-    # Workflow 生命周期
-    # ==========================================================
+    def has_next(self) -> bool:
 
-    def start(self):
-        """
-        Workflow 开始
-        """
+        return self.current_index < len(self.steps)
 
-        self.state = WorkflowState.RUNNING
+    # =====================================================
+    # Total Step
+    # =====================================================
 
-        self.current_step_index = -1
-
-        self.updated_at = datetime.utcnow()
-
-    def success(self):
-        """
-        Workflow 成功
-        """
-
-        self.state = WorkflowState.SUCCESS
-
-        self.updated_at = datetime.utcnow()
-
-    def fail(self):
-        """
-        Workflow 失败
-        """
-
-        self.state = WorkflowState.FAILED
-
-        self.updated_at = datetime.utcnow()
-
-    def cancel(self):
-        """
-        Workflow 取消
-        """
-
-        self.state = WorkflowState.CANCELLED
-
-        self.updated_at = datetime.utcnow()
-
-    # ==========================================================
-    # 判断
-    # ==========================================================
-
-    def is_finished(
-        self,
-    ) -> bool:
-        """
-        是否结束
-        """
-
-        return self.state.is_finished()
-
-    def has_next_step(
-        self,
-    ) -> bool:
-        """
-        是否还有 Step
-        """
-
-        return self.current_step_index + 1 < len(self.steps)
-
-    def step_count(
-        self,
-    ) -> int:
-        """
-        Step 数量
-        """
+    @property
+    def total_steps(self):
 
         return len(self.steps)
 
-    # ==========================================================
+    # =====================================================
+    # Finished
+    # =====================================================
+
+    @property
+    def finished(self):
+
+        return self.current_index >= len(self.steps)
+
+    # =====================================================
     # Reset
-    # ==========================================================
+    # =====================================================
 
     def reset(self):
-        """
-        重置 Workflow
-        """
+
+        self.current_index = 0
 
         self.state = WorkflowState.CREATED
 
-        self.current_step_index = -1
-
         for step in self.steps:
+
             step.reset()
 
         if self.context:
+
             self.context.reset_runtime()
 
-        self.updated_at = datetime.utcnow()
+    # =====================================================
+    # Ready
+    # =====================================================
 
-    # ==========================================================
+    def ready(self):
+
+        self.state = WorkflowState.READY
+
+    # =====================================================
+    # Running
+    # =====================================================
+
+    def running(self):
+
+        self.state = WorkflowState.RUNNING
+
+    # =====================================================
+    # Success
+    # =====================================================
+
+    def success(self):
+
+        self.state = WorkflowState.SUCCESS
+
+    # =====================================================
+    # Failed
+    # =====================================================
+
+    def failed(self):
+
+        self.state = WorkflowState.FAILED
+
+    # =====================================================
+    # Pause
+    # =====================================================
+
+    def pause(self):
+
+        self.state = WorkflowState.PAUSED
+
+    # =====================================================
+    # Resume
+    # =====================================================
+
+    def resume(self):
+
+        self.state = WorkflowState.RUNNING
+
+    # =====================================================
+    # Validate
+    # =====================================================
+
+    def validate(self):
+
+        if self.context is None:
+
+            raise RuntimeError(
+                "WorkflowContext is None."
+            )
+
+        if len(self.steps) == 0:
+
+            raise RuntimeError(
+                "Workflow has no step."
+            )
+
+        ids = set()
+
+        for step in self.steps:
+
+            if step.step_id in ids:
+
+                raise RuntimeError(
+                    f"Duplicate Step ID: {step.step_id}"
+                )
+
+            ids.add(step.step_id)
+
+    # =====================================================
     # Dict
-    # ==========================================================
+    # =====================================================
 
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        序列化
-        """
+    def to_dict(self):
 
         return {
 
@@ -253,40 +274,34 @@ class Workflow:
 
             "state": self.state.value,
 
-            "step_count": len(self.steps),
+            "current_index": self.current_index,
 
-            "current_step_index": self.current_step_index,
-
-            "created_at": self.created_at.isoformat(),
-
-            "updated_at": self.updated_at.isoformat(),
+            "total_steps": self.total_steps,
 
             "metadata": self.metadata,
 
             "steps": [
-                step.to_dict()
-                for step in self.steps
-            ],
 
-            "context": (
-                self.context.to_dict()
-                if self.context
-                else None
-            )
+                step.to_dict()
+
+                for step in self.steps
+
+            ]
         }
 
-    # ==========================================================
+    # =====================================================
     # String
-    # ==========================================================
+    # =====================================================
 
     def __str__(self):
 
         return (
+
             f"<Workflow("
             f"id={self.workflow_id}, "
-            f"name={self.name}, "
-            f"state={self.state.value}, "
-            f"steps={len(self.steps)})>"
+            f"steps={len(self.steps)}, "
+            f"state={self.state.value})>"
+
         )
 
     __repr__ = __str__
