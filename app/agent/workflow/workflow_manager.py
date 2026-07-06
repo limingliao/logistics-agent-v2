@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from workflow.workflow import Workflow
-from workflow.workflow_context import WorkflowContext
-from workflow.workflow_engine import WorkflowEngine
-from workflow.workflow_result import WorkflowResult
+from app.agent.workflow.workflow import Workflow
+from app.agent.workflow.workflow_context import WorkflowContext
+from app.agent.workflow.workflow_engine import WorkflowEngine
+from app.agent.workflow.workflow_result import WorkflowResult
 
 
 class WorkflowManager:
