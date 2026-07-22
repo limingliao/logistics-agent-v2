@@ -1,166 +1,199 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from rag.chunk import Chunk
+from app.rag.chunk import Chunk
 
 
 @dataclass
 class RetrievalResult:
     """
-    RAG 检索结果
+    检索结果
 
-    一个 RetrievalResult 表示一次完整的检索过程。
+    表示一次 Retriever 执行结果：
 
-    包含：
-        - 查询内容
-        - 检索结果
-        - 检索耗时
-        - Retriever名称
-        - TopK
-        - Metadata
+        Query
+
+          ↓
+
+        Retriever
+
+          ↓
+
+        Chunks + Scores
+
     """
 
-    # 原始Query
+
+    # ==========================================
+    # Query
+    # ==========================================
+
     query: str
 
-    # 检索到的Chunk
-    chunks: List[Chunk] = field(default_factory=list)
 
-    # Retriever名称
-    retriever_name: str = ""
+    # ==========================================
+    # Retrieved Chunks
+    # ==========================================
 
-    # 检索数量
-    top_k: int = 5
+    chunks: List[Chunk] = field(
+        default_factory=list
+    )
 
-    # 总命中数量
-    total_hits: int = 0
 
-    # 检索耗时（秒）
+    # ==========================================
+    # Similarity Scores
+    # ==========================================
+
+    scores: List[float] = field(
+        default_factory=list
+    )
+
+
+    # ==========================================
+    # Statistics
+    # ==========================================
+
     elapsed: float = 0.0
 
-    # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
-    # ==========================================================
-    # Property
-    # ==========================================================
+    metadata: Dict[str, Any] = field(
+        default_factory=dict
+    )
+
+
+    # ==========================================
+    # Properties
+    # ==========================================
 
     @property
     def success(self) -> bool:
-        """
-        是否成功命中
-        """
+
         return len(self.chunks) > 0
 
-    @property
-    def is_empty(self) -> bool:
-        """
-        是否为空结果
-        """
-        return len(self.chunks) == 0
 
     @property
     def count(self) -> int:
-        """
-        返回Chunk数量
-        """
+
         return len(self.chunks)
 
+
     @property
-    def scores(self) -> List[float]:
+    def top_score(self) -> Optional[float]:
         """
-        返回所有Chunk Score
+        最高相似度
         """
-        return [
-            chunk.score
-            for chunk in self.chunks
-        ]
 
-    # ==========================================================
-    # Chunk
-    # ==========================================================
-
-    def first(self) -> Chunk | None:
-        """
-        第一条结果
-        """
-        if self.is_empty:
+        if not self.scores:
             return None
 
-        return self.chunks[0]
+        return max(self.scores)
 
-    def add_chunk(
+
+
+    # ==========================================
+    # Get Result
+    # ==========================================
+
+    def get(
+        self,
+        index: int,
+    ):
+
+        if index >= len(self.chunks):
+
+            return None
+
+
+        return {
+            "chunk": self.chunks[index],
+
+            "score": (
+                self.scores[index]
+                if index < len(self.scores)
+                else None
+            )
+        }
+
+
+
+    # ==========================================
+    # Add
+    # ==========================================
+
+    def add(
         self,
         chunk: Chunk,
-    ) -> None:
-        """
-        添加Chunk
-        """
-        self.chunks.append(chunk)
+        score: float = 0.0,
+    ):
 
-    def extend(
-        self,
-        chunks: List[Chunk],
-    ) -> None:
-        """
-        添加多个Chunk
-        """
-        self.chunks.extend(chunks)
+        self.chunks.append(
+            chunk
+        )
 
-    # ==========================================================
-    # Metadata
-    # ==========================================================
+        self.scores.append(
+            score
+        )
 
-    def set_metadata(
-        self,
-        key: str,
-        value: Any,
-    ) -> None:
-        self.metadata[key] = value
 
-    def get_metadata(
-        self,
-        key: str,
-        default=None,
-    ) -> Any:
-        return self.metadata.get(key, default)
-
-    # ==========================================================
+    # ==========================================
     # Serialization
-    # ==========================================================
+    # ==========================================
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self):
+
         return {
+
             "query": self.query,
-            "retriever_name": self.retriever_name,
-            "top_k": self.top_k,
-            "total_hits": self.total_hits,
-            "elapsed": self.elapsed,
+
             "success": self.success,
+
+            "count": self.count,
+
+            "elapsed": self.elapsed,
+
+            "scores": self.scores,
+
             "chunks": [
+
                 chunk.to_dict()
+
                 for chunk in self.chunks
+
             ],
+
             "metadata": self.metadata,
         }
 
-    # ==========================================================
-    # Magic Method
-    # ==========================================================
 
-    def __len__(self) -> int:
+
+    # ==========================================
+    # Magic
+    # ==========================================
+
+    def __len__(self):
+
         return self.count
 
-    def __bool__(self) -> bool:
+
+    def __bool__(self):
+
         return self.success
 
-    def __repr__(self) -> str:
+
+    def __repr__(self):
+
         return (
+
             f"RetrievalResult("
+
             f"query='{self.query}', "
-            f"chunks={self.count}, "
-            f"hits={self.total_hits}, "
-            f"elapsed={self.elapsed:.4f}s)"
+
+            f"count={self.count}, "
+
+            f"top_score={self.top_score}"
+
+            ")"
+
         )
