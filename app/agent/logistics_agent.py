@@ -1,332 +1,382 @@
-"""
-Enterprise Logistics Agent
+from __future__ import annotations
 
-Agent Orchestrator
+from typing import Any, Dict, Optional
 
-职责：
-
-1. Think
-2. Intent Routing
-3. Planning
-4. Execution
-"""
-
-from typing import Any, Dict
-
-from sqlalchemy.orm import Session
-
-from app.agent.executor import Executor
-from app.agent.intent_router import IntentRouter
-from app.agent.planner import Planner
-from app.core.exceptions import BusinessException
-from app.core.logger import logger
-
-from app.database.repository.conversation_repository import ConversationRepository
-from app.services.conversation_service import ConversationService
-
-from app.llm.model import llm
-from app.agent.response_formatter import ResponseFormatter
-from app.agent.memory.memory_manager import MemoryManager
-from app.conversation.conversation import Conversation
-from app.services.memory_service import MemoryService
-from app.database.repository.memory_repository import MemoryRepository
-from app.agent.context import AgentContext
-from app.agent.prompts.prompt_manager import PromptManager
-from app.agent.reflection.reflection_manager import ReflectionManager
-from app.agent.reasoning.reasoning_manager import ReasoningManager
+from app.agent.base_agent import BaseAgent
 
 
-class LogisticsAgent:
+
+class LogisticsAgent(BaseAgent):
     """
-    企业级 Logistics Agent
+    物流智能客服Agent
+
+
+    能力：
+
+    - 订单查询
+    - 物流查询
+    - 知识库问答
+    - 智能回复
+
+
     """
 
-    def __init__(self, db: Session):
-
-        self.db = db
-
-        self.router = IntentRouter()
-
-        self.planner = Planner()
-
-        self.executor = Executor()
-
-        self.response_formatter = ResponseFormatter()
-        self.conversation_repo = ConversationRepository()
-        self.conversation_service = ConversationService(self.conversation_repo)
-        # Prompt Manager
-        self.prompt_manager = PromptManager()
-        # Reflection
-        self.reflection = ReflectionManager()
-        # Memory
-        memory_repository = MemoryRepository(db)
-
-        memory_service = MemoryService(memory_repository)
-
-        conversation_memory = Conversation(memory_service)
-
-        self.memory = MemoryManager(conversation_memory)
-
-        self.reasoning = ReasoningManager()
-
-    # =====================================================
-    # Chat Entry
-    # =====================================================
-
-    def chat(
-            self,
-            user_id: str,
-            message: str,
-            conversation_id: str | None = None
-    ) -> str:
-
-        if not message:
-            raise BusinessException("message不能为空")
-
-        logger.info("=" * 60)
-        logger.info("[Agent] Start Chat")
-        logger.info(f"[User] {message}")
-
-        try:
-            # 先拿conversation
-            conversation = self.conversation_service.get_or_create(
-                user_id=user_id,
-                conversation_id=conversation_id
-            )
-            # =========================
-            # 1. 创建 Context
-            # =========================
-            context = AgentContext(
-                message=message,
-                user_id=user_id,
-                conversation_id=conversation.id
-            )
-            # =========================
-            # 2. 读取 Memory（关键）
-            # =========================
-            history = self.memory.load_context(conversation.id)
-            context.history = history
-            prompt = self.prompt_manager.build(
-                user_input=message,
-                history=history,
-                memory=""
-            )
-            context.prompt = prompt
-            # =========================
-            # 3. 路由
-            # =========================
-            context = self.route(context)
-            context = self.reason(context)
-
-            # =====================================================
-            # Reasoning
-            # =====================================================
-
-            def reason(
-                    self,
-                    context: AgentContext
-            ) -> AgentContext:
-
-                logger.info("[Reasoning]")
-
-                result = self.reasoning.run(
-
-                    message=context.message,
-
-                    intent=context.intent
-
-                )
-
-                context.reasoning_result = result
-
-                return context
-            # =========================
-            # 4. 规划
-            # =========================
-            context = self.plan(context)
-            # =========================
-            # 5. 执行
-            # =========================
-            context = self.execute(context)
-            answer = self.chat_with_llm(
-                context.prompt
-            )
-
-            # answer = self.reflect(
-            #     context.prompt,
-            #     answer)
-            result = self.reflection.reflect(answer)
-
-            if result.retry:
-                answer = self.chat_with_llm(
-                    prompt + f"""
-
-            请重新检查你的回答。
-
-            上一轮存在以下问题：
-
-            {result.reason}
-
-            请重新生成最终答案。
-            """
-                )
-            context.response = answer
-
-            # =========================
-            # 6. 生成回复
-            # =========================
-            context = self.format(context)
-            # =========================
-            # 7. 写入 Memory（关键）
-            # =========================
-            self.memory.save_user_message(conversation.id, message)
-            self.memory.save_assistant_message(conversation.id, context.response)
-
-            logger.info("[Agent] Chat Finished")
-            return context.response
-        except Exception as e:
-
-            logger.exception("[Agent] Chat Failed")
-
-            raise BusinessException("AI服务调用失败") from e
-
-    # =====================================================
-    # Think
-    # =====================================================
-
-    # def think(
-    #     self,
-    #     message: str
-    # ) -> Dict[str, Any]:
-    #
-    #     logger.info("[Think]")
-    #
-    #     return {
-    #
-    #         "message": message,
-    #
-    #         "intent": None,
-    #
-    #         "entities": {}
-    #     }
-    def think(self, message: str) -> AgentContext:
-
-        return AgentContext(message=message)
-
-    # =====================================================
-    # Route
-    # =====================================================
-
-    def route(
+    def __init__(
         self,
-        context: AgentContext
-    ) -> AgentContext:
+        **kwargs
+    ):
 
-        logger.info("[Router]")
-
-        result = self.router.route(
-            context.message
+        super().__init__(
+            name="logistics_agent",
+            **kwargs
         )
 
-        context.intent = result.intent
 
-        context.entities = result.entities
-
-        context.confidence = result.confidence
-
-        return context
 
     # =====================================================
-    # Plan
+    # Main Entry
     # =====================================================
 
-    def plan(
+    def run(
         self,
-        context: AgentContext
-    ) -> AgentContext:
+        message: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
 
-        logger.info("[Planner]")
+        context = context or {}
 
-        return self.planner.create_plan(context)
+
+        # --------------------------------
+        # 1. 获取历史记忆
+        # --------------------------------
+
+        history = self._get_history(
+            context
+        )
+
+
+        # --------------------------------
+        # 2. 意图识别
+        # --------------------------------
+
+        intent = self._detect_intent(
+            message
+        )
+
+
+        # --------------------------------
+        # 3. 执行业务
+        # --------------------------------
+
+        tool_result = None
+
+        rag_result = None
+
+
+
+        if intent == "order_query":
+
+            tool_result = (
+                self._query_order(
+                    message
+                )
+            )
+
+
+        elif intent == "knowledge":
+
+            rag_result = (
+                self.retrieve(
+                    message
+                )
+            )
+
+
+        elif intent == "complex":
+
+            tool_result = (
+                self._query_order(
+                    message
+                )
+            )
+
+            rag_result = (
+                self.retrieve(
+                    message
+                )
+            )
+
+
+        # --------------------------------
+        # 4. 构建Prompt
+        # --------------------------------
+
+        prompt = self._build_prompt(
+
+            message=message,
+
+            history=history,
+
+            tool_result=tool_result,
+
+            rag_result=rag_result,
+
+        )
+
+
+        # --------------------------------
+        # 5. LLM生成
+        # --------------------------------
+
+        result = self.generate(
+            prompt,
+            system_prompt=self.system_prompt()
+        )
+
+
+        # --------------------------------
+        # 6. 保存记忆
+        # --------------------------------
+
+        self.remember(
+
+            key="last_message",
+
+            value={
+                "user":message,
+                "assistant":result.text
+            }
+
+        )
+
+
+        return result
+
+
 
     # =====================================================
-    # Execute
+    # Intent
     # =====================================================
 
-    def execute(
+    def _detect_intent(
         self,
-        context: AgentContext
-    ) -> AgentContext:
+        message:str
+    ):
 
-        logger.info("[Executor]")
+        keywords = {
 
-        return self.executor.execute(context)
+
+            "order_query":[
+                "订单",
+                "物流",
+                "在哪里",
+                "到哪",
+                "什么时候到",
+                "运输"
+            ],
+
+
+            "knowledge":[
+
+                "赔偿",
+                "规则",
+                "多少钱",
+                "怎么办",
+                "政策"
+
+            ]
+
+        }
+
+
+
+        for intent, words in keywords.items():
+
+            for word in words:
+
+                if word in message:
+
+                    return intent
+
+
+
+        return "complex"
+
 
 
     # =====================================================
-    # LLM
+    # Tool Query
     # =====================================================
 
-    def chat_with_llm(
+    def _query_order(
         self,
-        message: str
-    ) -> str:
+        message:str
+    ):
 
-        logger.info("[LLM]")
+        """
+        调用订单查询Tool
 
-        messages = [
-            {
 
-                "role": "user",
+        """
 
-                "content": message
+        if not self.tool_manager:
+
+            return None
+
+
+        try:
+
+            return self.execute_tool(
+
+                "query_order",
+
+                message=message
+
+            )
+
+
+        except Exception as e:
+
+            return {
+
+                "error":str(e)
 
             }
 
-        ]
 
-        return llm.chat_with_messages(messages)
 
     # =====================================================
-    # Reflection
+    # Prompt
     # =====================================================
 
-    def reflect(
-            self,
-            prompt: str,
-            answer: str
-    ) -> str:
-        """
-        Reflection阶段
+    def _build_prompt(
+        self,
+        message,
+        history=None,
+        tool_result=None,
+        rag_result=None,
+    ):
 
-        负责检查LLM回答质量，
-        必要时自动重试一次。
-        """
 
-        logger.info("[Reflection]")
+        prompt = f"""
 
-        result = self.reflection.reflect(answer)
+你是一名专业物流客服。
 
-        logger.info(
-            f"[Reflection] "
-            f"score={result.score}, "
-            f"passed={result.passed}, "
-            f"reason={result.reason}"
+请根据以下信息回答用户。
+
+
+用户问题：
+
+{message}
+
+
+"""
+
+
+        if history:
+
+            prompt += f"""
+
+历史对话：
+
+{history}
+
+"""
+
+
+        if tool_result:
+
+            prompt += f"""
+
+订单查询结果：
+
+{tool_result}
+
+"""
+
+
+        if rag_result:
+
+            prompt += f"""
+
+知识库资料：
+
+{rag_result}
+
+"""
+
+
+        prompt += """
+
+要求：
+
+1. 回复准确
+2. 不确定的信息不要编造
+3. 使用客服语气
+4. 简洁清晰
+
+
+"""
+
+
+        return prompt
+
+
+
+    # =====================================================
+    # Memory
+    # =====================================================
+
+    def _get_history(
+        self,
+        context
+    ):
+
+        if not self.memory_manager:
+
+            return None
+
+
+        return self.recall(
+            "last_message"
         )
 
-        if not self.reflection.should_retry(answer):
-            return answer
 
-        logger.warning("[Reflection] Retry LLM...")
 
-        retry_answer = self.chat_with_llm(prompt)
+    # =====================================================
+    # System Prompt
+    # =====================================================
 
-        retry_result = self.reflection.reflect(retry_answer)
+    def system_prompt(self):
 
-        logger.info(
-            f"[Reflection Retry] "
-            f"score={retry_result.score}, "
-            f"passed={retry_result.passed}"
-        )
+        return """
 
-        return retry_answer
+你是物流行业智能客服助手。
+
+你的职责：
+
+- 查询订单
+- 查询物流状态
+- 解答物流政策
+- 帮助用户解决配送问题
+
+
+"""
+
+
+
+    # =====================================================
+    # Health
+    # =====================================================
+
+    def health_check(self):
+
+        return {
+
+            "agent":
+                self.name,
+
+            "status":
+                "running"
+
+        }
