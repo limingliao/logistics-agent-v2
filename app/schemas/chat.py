@@ -18,12 +18,11 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """
-    AI回复
-    """
 
     success: bool = True
 
     answer: str
 
-    model: str
+    model: str = ""
+
+    elapsed: float = 0
