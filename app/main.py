@@ -15,6 +15,9 @@ from app.core.middleware import register_middleware
 from app.core.logger import logger
 
 
+def create_agent_manager():
+    pass
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,14 +31,15 @@ async def lifespan(app: FastAPI):
     logger.info("running on(docs):http://127.0.0.1:8000/docs")
 
     logger.info("=" * 50)
+ 
+    # 初始化Agent
+    manager = create_agent_manager()
 
-    # 这里以后可以初始化：
-    # 数据库连接
-    # FAISS向量库
-    # Redis
-    # LLM
-    # 日志系统
 
+    # 注入chat接口
+    set_agent_manager(
+        manager
+    )
     yield
 
     logger.info("=" * 50)
@@ -96,7 +100,8 @@ async def ping():
 
 # 后续开发时取消注释即可
 #
-from app.api.chat import router as chat_router
+from app.api.chat import router as chat_router, set_agent_manager
+
 # from app.api.order import router as order_router
 #
 app.include_router(chat_router, prefix="/chat", tags=["聊天"])
